@@ -17,6 +17,7 @@ class _CheckPageState extends State<CheckPage> {
   double large = 2;
   List<PointCorner> listCorners = [];
   bool selectChange = false;
+  List<PointCorner> listCurrentPoint = [];
 
   @override
   void initState() {
@@ -59,12 +60,213 @@ class _CheckPageState extends State<CheckPage> {
           listCorners.elementAt(index).selectChange(selectChange);
       if (checkSelect) {
         // selectChange = !selectChange;
-        listCorners.elementAt(index).percent += 1 / 8;
-        processMachine(listCorners.elementAt(index));
+        PointCorner currentPoint = listCorners.elementAt(index);
+        currentPoint.percent += 1 / 8;
+        listCurrentPoint.add(currentPoint);
+        processMachine2(currentPoint);
       }
     }
     setState(() {});
   }
+
+  processMachine2(PointCorner pointCorner) {
+    if (pointCorner.dotPoint.x < 0 ||
+        pointCorner.dotPoint.y < 0 ||
+        pointCorner.dotPoint.x > count - 2 ||
+        pointCorner.dotPoint.y > count - 2) return;
+
+    List<DotPoint> list8 = getEightCorner(pointCorner.dotPoint);
+    List<PointCorner> list8Corner = [];
+    for (var element in listCorners) {
+      for (var el in list8) {
+        if (element.checkMatch(el)) {
+          list8Corner.add(element);
+          element.percent += 1 / 8;
+        }
+      }
+    }
+
+    list8Corner.sort(
+      (a, b) => a.percent.compareTo(b.percent),
+    );
+    PointCorner tmp = list8Corner.reversed.first;
+    if (tmp.percent >= pointCorner.percent) {
+      PointCorner tmp0 = list8Corner.last;
+      for (var element in list8Corner) {
+        if (element.notSelected()) {
+          tmp0 = element;
+          break;
+        }
+      }
+      int index = listCorners.indexWhere(
+        (element) =>
+            element.dotPoint.x == tmp0.pointX &&
+            element.dotPoint.y == tmp0.pointY,
+      );
+      if (index != -1) {
+        listCorners.elementAt(index).selectChange(!selectChange);
+        listCurrentPoint.clear();
+      } else {}
+      setState(() {});
+      return;
+    }
+    bool notSelected = true;
+    for (var element in list8Corner.reversed) {
+      if (element.selectPersonal &&
+          !listCurrentPoint.any(
+            (el) => el.checkMatch(element.dotPoint),
+          )) {
+        tmp = element;
+        notSelected = false;
+        break;
+      }
+    }
+    if (notSelected) {
+      PointCorner tmp1 = list8Corner.last;
+      for (var element in list8Corner) {
+        if (element.notSelected()) {
+          tmp1 = element;
+          break;
+        }
+      }
+      int index = listCorners.indexWhere(
+        (element) =>
+            element.dotPoint.x == tmp1.pointX &&
+            element.dotPoint.y == tmp1.pointY,
+      );
+      if (index != -1) {
+        listCorners.elementAt(index).selectChange(!selectChange);
+        listCurrentPoint.clear();
+      } else {}
+      setState(() {});
+    } else {
+      listCurrentPoint.add(tmp);
+      processMachine2(tmp);
+      setState(() {});
+      return;
+    }
+  }
+
+  //-----------------1--------------------
+  processMachine1(PointCorner pointCorner) {
+    if (pointCorner.dotPoint.x < 0 ||
+        pointCorner.dotPoint.y < 0 ||
+        pointCorner.dotPoint.x > count - 2 ||
+        pointCorner.dotPoint.y > count - 2) return;
+
+    List<DotPoint> list8 = getEightCorner(pointCorner.dotPoint);
+    List<PointCorner> list8Corner = [];
+    for (var element in listCorners) {
+      for (var el in list8) {
+        if (element.checkMatch(el)) {
+          list8Corner.add(element);
+          element.percent += 1 / 8;
+        }
+      }
+    }
+
+    List<Map<double, List<PointCorner>>> mapPoints = [
+      {
+        (list8Corner.first.percent + list8Corner.last.percent): [
+          list8Corner.first,
+          list8Corner.last
+        ]
+      },
+      {
+        (list8Corner.elementAt(1).percent + list8Corner.elementAt(6).percent): [
+          list8Corner.elementAt(1),
+          list8Corner.elementAt(6)
+        ]
+      },
+      {
+        (list8Corner.elementAt(2).percent + list8Corner.elementAt(5).percent): [
+          list8Corner.elementAt(2),
+          list8Corner.elementAt(5)
+        ]
+      },
+      {
+        (list8Corner.elementAt(3).percent + list8Corner.elementAt(4).percent): [
+          list8Corner.elementAt(3),
+          list8Corner.elementAt(4)
+        ]
+      },
+    ];
+    mapPoints.sort(
+      (a, b) => a.keys.first.compareTo(b.keys.first),
+    );
+
+    List<PointCorner> maxPercent = mapPoints.last.values as List<PointCorner>;
+
+    if (!maxPercent.first.notSelected() && !maxPercent.last.notSelected()) {
+      getPoint(maxPercent.first, pointCorner, maxPercent.last);
+    } else if (!maxPercent.first.notSelected()) {
+      getPoint(maxPercent.first, pointCorner, null);
+    } else if (!maxPercent.last.notSelected()) {
+      getPoint(null, pointCorner, maxPercent.last);
+    }
+  }
+
+  DotPoint getPoint(
+      PointCorner? first, PointCorner current, PointCorner? last) {
+    int x = 0;
+    int y = 0;
+    int xy = 0;
+    DotPoint result = current.dotPoint;
+    if (first != null && last != null) {
+      if (first.percent >= last.percent) {
+        x = 0;
+        y = 0;
+        xy = 0;
+        if (current.pointX > first.pointX) {
+          xy = -1;
+        }
+        if (current.pointX == first.pointX) {
+          y = -1;
+        }
+        if (current.pointX < first.pointX) {
+          x = 1;
+        }
+        result = dotPoint(x, y, xy, first.dotPoint);
+      } else {
+        x = 0;
+        y = 0;
+        xy = 0;
+        if (current.pointX > last.pointX) {
+          x = -1;
+          y = 1;
+        }
+        if (current.pointX == last.pointX) {
+          y = 1;
+        }
+        if (current.pointX < last.pointX) {
+          xy = 1;
+        }
+        result = dotPoint(x, y, xy, first.dotPoint);
+      }
+    }
+    if (first != null && last == null) {}
+    return result;
+  }
+
+  DotPoint dotPoint(int x, int y, int xy, DotPoint point) {
+    int xP = point.x;
+    int yP = point.y;
+    bool check = false;
+    do {
+      xP = xP + x + y + xy;
+      yP = yP + x + y + xy;
+      int index = listCorners.indexWhere(
+        (element) => element.dotPoint.x == xP && element.dotPoint.y == yP,
+      );
+      if (index != -1) {
+        check = true;
+      } else {
+        check = false;
+      }
+    } while (check);
+    return DotPoint(x: xP, y: yP);
+  }
+  //-----------------1--------------------
 
   processMachine(PointCorner pointCorner) {
     if (pointCorner.dotPoint.x < 0 ||
@@ -90,7 +292,7 @@ class _CheckPageState extends State<CheckPage> {
     );
 
     DotPoint dotPointTmp =
-        DotPoint(x: pointCorner.pointX(), y: pointCorner.pointY());
+        DotPoint(x: pointCorner.pointX, y: pointCorner.pointY);
 
     //check new
     // bool checkNotArrow = true;
@@ -101,8 +303,8 @@ class _CheckPageState extends State<CheckPage> {
       if (index != -1) {
         if (listCorners.elementAt(index).notSelected()) {
           dotPointTmp = DotPoint(
-              x: listCorners.elementAt(index).pointX(),
-              y: listCorners.elementAt(index).pointY());
+              x: listCorners.elementAt(index).pointX,
+              y: listCorners.elementAt(index).pointY);
           //----------
           // listCorners.elementAt(index).selectChange(!selectChange);
           // checkNotArrow = false;
@@ -118,13 +320,13 @@ class _CheckPageState extends State<CheckPage> {
       if (index != -1) {
         PointCorner tmp = listCorners.elementAt(index);
         if (tmp.selectedPersonal()) {
-          int x = tmp.pointX();
-          int y = tmp.pointY();
-          int X = pointCorner.pointX();
-          int Y = pointCorner.pointY();
+          int x = tmp.pointX;
+          int y = tmp.pointY;
+          int X = pointCorner.pointX;
+          int Y = pointCorner.pointY;
           bool changeX = true;
           bool changeY = true;
-          if (x < X) {            
+          if (x < X) {
             x = X + 1;
             changeX = false;
           }
@@ -155,7 +357,12 @@ class _CheckPageState extends State<CheckPage> {
     );
 
     if (index != -1) {
-      listCorners.elementAt(index).selectChange(!selectChange);
+      if (listCorners.elementAt(index).notSelected()) {
+        listCorners.elementAt(index).selectChange(!selectChange);
+        if (listCorners.elementAt(index).percent > 0) {
+          listCorners.elementAt(index).percent -= 1 / 8;
+        }
+      }
     }
 
     // if (checkNotArrow) {
@@ -274,8 +481,8 @@ class _CheckPageState extends State<CheckPage> {
                                 children: [
                                   Text(
                                       "(${listCorners.elementAt(index).dotPoint.x},${listCorners.elementAt(index).dotPoint.y})\n"),
-                                  // Text(
-                                  //     "${listCorners.elementAt(index).percent}")
+                                  Text(
+                                      "${listCorners.elementAt(index).percent}")
                                 ],
                               ),
                             ),

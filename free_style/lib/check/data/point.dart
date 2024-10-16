@@ -40,11 +40,11 @@ class PointCorner {
     return false;
   }
 
-  int pointX() {
+  int get pointX {
     return dotPoint.x;
   }
 
-  int pointY() {
+  int get pointY {
     return dotPoint.y;
   }
 
