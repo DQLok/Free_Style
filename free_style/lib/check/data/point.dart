@@ -1,31 +1,39 @@
 class PointCorner {
   double dx;
   double dy;
-  bool selectFirst;
-  bool selectSeconds;
+  bool selectMachine;
+  bool selectPersonal;
   DotPoint dotPoint;
   double percent;
 
   PointCorner(
       {required this.dx,
       required this.dy,
-      required this.selectFirst,
-      required this.selectSeconds,
+      required this.selectMachine,
+      required this.selectPersonal,
       required this.dotPoint,
       required this.percent});
 
   bool notSelected() {
-    return !selectFirst && !selectSeconds ? true : false;
+    return !selectMachine && !selectPersonal ? true : false;
+  }
+
+  bool selectedMachine() {
+    return selectMachine;
+  }
+
+  bool selectedPersonal() {
+    return selectPersonal;
   }
 
   bool selectChange(bool check) {
     if (notSelected()) {
       if (check) {
-        selectFirst = true;
-        selectSeconds = false;
+        selectMachine = true;
+        selectPersonal = false;
       } else {
-        selectFirst = false;
-        selectSeconds = true;
+        selectMachine = false;
+        selectPersonal = true;
       }
       return true;
     }
@@ -38,6 +46,14 @@ class PointCorner {
 
   int pointY() {
     return dotPoint.y;
+  }
+
+  void setPointX(int x) {
+    dotPoint.x = x;
+  }
+
+  void setPointY(int y) {
+    dotPoint.y = y;
   }
 
   bool checkMatch(DotPoint dotPoint) {

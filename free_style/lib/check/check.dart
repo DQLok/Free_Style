@@ -33,8 +33,8 @@ class _CheckPageState extends State<CheckPage> {
         listCorners.add(PointCorner(
             dx: (width / count) * (j + 1) - radius,
             dy: (height - marginTop) * (i + 1) / count - radius,
-            selectFirst: false,
-            selectSeconds: false,
+            selectMachine: false,
+            selectPersonal: false,
             dotPoint: DotPoint(x: j, y: i),
             percent: 0));
       }
@@ -59,6 +59,7 @@ class _CheckPageState extends State<CheckPage> {
           listCorners.elementAt(index).selectChange(selectChange);
       if (checkSelect) {
         // selectChange = !selectChange;
+        listCorners.elementAt(index).percent += 1 / 8;
         processMachine(listCorners.elementAt(index));
       }
     }
@@ -83,41 +84,97 @@ class _CheckPageState extends State<CheckPage> {
     }
     log(listCorners.toString());
 
-    //
+    //desc
     list8Corner.sort(
-      (a, b) => a.percent.compareTo(b.percent),
+      (a, b) => b.percent.compareTo(a.percent),
     );
 
-    bool checkNotArrow = true;
+    DotPoint dotPointTmp =
+        DotPoint(x: pointCorner.pointX(), y: pointCorner.pointY());
+
+    //check new
+    // bool checkNotArrow = true;
     for (var element in list8Corner) {
       int index = listCorners.indexWhere(
         (el) => el.checkMatch(element.dotPoint),
       );
       if (index != -1) {
         if (listCorners.elementAt(index).notSelected()) {
-          listCorners.elementAt(index).selectChange(!selectChange);
-          checkNotArrow = false;
+          dotPointTmp = DotPoint(
+              x: listCorners.elementAt(index).pointX(),
+              y: listCorners.elementAt(index).pointY());
+          //----------
+          // listCorners.elementAt(index).selectChange(!selectChange);
+          // checkNotArrow = false;
           break;
         }
       }
     }
-    if (checkNotArrow) {
-      // bool check = false;
-      for (int y = pointCorner.dotPoint.y; y >= 0; y--) {
-        for (int x = pointCorner.dotPoint.x; x >= 0; x--) {
-          int index = listCorners.indexWhere(
-            (element) => element.dotPoint.x == x && element.dotPoint.y == y,
-          );
-          if (index != -1) {
-            if (listCorners.elementAt(index).notSelected()) {
-              listCorners.elementAt(index).selectChange(!selectChange);
-              // check = false;
-              break;
+
+    for (var element in list8Corner) {
+      int index = listCorners.indexWhere(
+        (el) => el.checkMatch(element.dotPoint),
+      );
+      if (index != -1) {
+        PointCorner tmp = listCorners.elementAt(index);
+        if (tmp.selectedPersonal()) {
+          int x = tmp.pointX();
+          int y = tmp.pointY();
+          int X = pointCorner.pointX();
+          int Y = pointCorner.pointY();
+          bool changeX = true;
+          bool changeY = true;
+          if (x < X) {            
+            x = X + 1;
+            changeX = false;
+          }
+          if (y < Y) {
+            y = Y + 1;
+            changeY = false;
+          }
+          if (changeX) {
+            if (x > X) {
+              x = X - 1;
             }
           }
+          if (changeY) {
+            if (y > Y) {
+              y = Y - 1;
+            }
+          }
+          dotPointTmp = DotPoint(x: x, y: y);
+          break;
         }
       }
     }
+
+    int index = listCorners.indexWhere(
+      (element) =>
+          element.dotPoint.x == dotPointTmp.x &&
+          element.dotPoint.y == dotPointTmp.y,
+    );
+
+    if (index != -1) {
+      listCorners.elementAt(index).selectChange(!selectChange);
+    }
+
+    // if (checkNotArrow) {
+    //   // bool check = false;
+    //   for (int y = pointCorner.dotPoint.y; y >= 0; y--) {
+    //     for (int x = pointCorner.dotPoint.x; x >= 0; x--) {
+    //       int index = listCorners.indexWhere(
+    //         (element) => element.dotPoint.x == x && element.dotPoint.y == y,
+    //       );
+    //       if (index != -1) {
+    //         if (listCorners.elementAt(index).notSelected()) {
+    //           listCorners.elementAt(index).selectChange(!selectChange);
+    //           // check = false;
+    //           break;
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
     setState(() {});
   }
 
@@ -212,20 +269,31 @@ class _CheckPageState extends State<CheckPage> {
                           Container(
                             margin: const EdgeInsets.only(left: 15, top: 15),
                             decoration: BoxDecoration(color: Colors.brown[50]),
-                            child: Text(
-                                "(${listCorners.elementAt(index).dotPoint.x},${listCorners.elementAt(index).dotPoint.y})"),
+                            child: IntrinsicHeight(
+                              child: Column(
+                                children: [
+                                  Text(
+                                      "(${listCorners.elementAt(index).dotPoint.x},${listCorners.elementAt(index).dotPoint.y})\n"),
+                                  // Text(
+                                  //     "${listCorners.elementAt(index).percent}")
+                                ],
+                              ),
+                            ),
                           ),
                           CircleAvatar(
-                            radius: listCorners.elementAt(index).selectFirst ||
-                                    listCorners.elementAt(index).selectSeconds
+                            radius: listCorners
+                                        .elementAt(index)
+                                        .selectMachine ||
+                                    listCorners.elementAt(index).selectPersonal
                                 ? radius
                                 : 0,
-                            backgroundColor:
-                                listCorners.elementAt(index).selectFirst
-                                    ? Colors.red
-                                    : listCorners.elementAt(index).selectSeconds
-                                        ? Colors.yellow
-                                        : null,
+                            backgroundColor: listCorners
+                                    .elementAt(index)
+                                    .selectMachine
+                                ? Colors.red
+                                : listCorners.elementAt(index).selectPersonal
+                                    ? Colors.yellow
+                                    : null,
                           ),
                         ])),
                   ),
