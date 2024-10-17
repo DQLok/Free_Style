@@ -75,78 +75,125 @@ class _CheckPageState extends State<CheckPage> {
         pointCorner.dotPoint.x > count - 2 ||
         pointCorner.dotPoint.y > count - 2) return;
 
-    List<DotPoint> list8 = getEightCorner(pointCorner.dotPoint);
-    List<PointCorner> list8Corner = [];
+    List<GroupDotPoint> list8 = getEightCorner(pointCorner.dotPoint);
+    if (list8.isEmpty) return;
+    List<Map<int, PointCorner>> list8Corner = [];
     for (var element in listCorners) {
       for (var el in list8) {
-        if (element.checkMatch(el)) {
-          list8Corner.add(element);
+        if (element.checkMatch(el.dotPoint)) {
+          list8Corner.add({el.level: element});
           element.percent += 1 / 8;
         }
       }
     }
 
-    // List<Map<double, List<PointCorner>>> mapPoints = [
-    //   {0: []},
-    //   {0: []},
-    //   {0: []},
-    // ];
-    // for (int i = 0; i < list8Corner.length; i++) {
-    //   if (list8Corner.elementAt(i).pointX ==0) {
-    //     if (list8Corner.elementAt(i).pointY)
-    //   }
-    // }
+    List<PointCorner> listGroup1 = [];
+    List<PointCorner> listGroup2 = [];
+    List<PointCorner> listGroup3 = [];
+    List<PointCorner> listGroup4 = [];
 
-    // for (int i = 0; i < list8Corner.length; i++) {
-    //   int j = list8Corner.length - i - 1;
-    //   if (j <= i) {
-    //     PointCorner first = list8Corner.elementAt(i);
-    //     mapPoints.add({
-    //       first.percent: [first]
-    //     });
-    //     break;
-    //   }
-    //   PointCorner first = list8Corner.elementAt(i);
-    //   PointCorner last = list8Corner.elementAt(j);
-    //   mapPoints.add({
-    //     (first.percent + last.percent): [first, last]
-    //   });
-    // }
-    List<Map<double, List<PointCorner>>> mapPoints = [
-      {
-        (list8Corner.first.percent + list8Corner.last.percent): [
-          list8Corner.first,
-          list8Corner.last
-        ]
-      },
-      {
-        (list8Corner.elementAt(1).percent + list8Corner.elementAt(6).percent): [
-          list8Corner.elementAt(1),
-          list8Corner.elementAt(6)
-        ]
-      },
-      {
-        (list8Corner.elementAt(2).percent + list8Corner.elementAt(5).percent): [
-          list8Corner.elementAt(2),
-          list8Corner.elementAt(5)
-        ]
-      },
-      {
-        (list8Corner.elementAt(3).percent + list8Corner.elementAt(4).percent): [
-          list8Corner.elementAt(3),
-          list8Corner.elementAt(4)
-        ]
-      },
+    for (var element in list8Corner) {
+      switch (element.keys.first) {
+        case 1:
+          // mapGroup1.addAll({1: element.values.first});
+          //----
+          PointCorner? point1 = getPointGroup(element.values.toList(), 0);
+          PointCorner? point2 = getPointGroup(element.values.toList(), 1);
+          PointCorner? point3 = getPointGroup(element.values.toList(), 2);
+          if (point1 != null) {
+            listGroup1.add(point1);
+          }
+          if (point2 != null) {
+            listGroup2.add(point2);
+          }
+          if (point3 != null) {
+            listGroup3.add(point3);
+          }
+          break;
+        case 2:
+          // mapGroup2.addAll({2: element.values.first});
+          //----
+          PointCorner? point1 = getPointGroup(element.values.toList(), 0);
+          PointCorner? point2 = getPointGroup(element.values.toList(), 1);
+          if (point1 != null) {
+            listGroup4.add(point1);
+          }
+          if (point2 != null) {
+            listGroup4.add(point2);
+          }
+          break;
+        case 3:
+          // mapGroup3.addAll({3: element.values.first});
+          //----
+          PointCorner? point1 = getPointGroup(element.values.toList(), 0);
+          PointCorner? point2 = getPointGroup(element.values.toList(), 1);
+          PointCorner? point3 = getPointGroup(element.values.toList(), 2);
+          if (point1 != null) {
+            listGroup3.add(point1);
+          }
+          if (point2 != null) {
+            listGroup2.add(point2);
+          }
+          if (point3 != null) {
+            listGroup1.add(point3);
+          }
+          break;
+        default:
+          // mapGroup1.addAll({1: element.values.first});
+          //----
+          PointCorner? point1 = getPointGroup(element.values.toList(), 0);
+          PointCorner? point2 = getPointGroup(element.values.toList(), 1);
+          PointCorner? point3 = getPointGroup(element.values.toList(), 2);
+          if (point1 != null) {
+            listGroup1.add(point1);
+          }
+          if (point2 != null) {
+            listGroup2.add(point2);
+          }
+          if (point3 != null) {
+            listGroup3.add(point3);
+          }
+          break;
+      }
+    }
+
+    double percent1 = 0;
+    double percent2 = 0;
+    double percent3 = 0;
+    double percent4 = 0;
+
+    for (var element in listGroup1) {
+      percent1 += element.percent;
+    }
+    for (var element in listGroup2) {
+      percent2 += element.percent;
+    }
+    for (var element in listGroup3) {
+      percent3 += element.percent;
+    }
+    for (var element in listGroup4) {
+      percent4 += element.percent;
+    }
+
+    List<GroupPercentPoint> mapPoints = [
+      GroupPercentPoint(percent: percent1, listPoint: listGroup1),
+      GroupPercentPoint(percent: percent2, listPoint: listGroup2),
+      GroupPercentPoint(percent: percent3, listPoint: listGroup3),
+      GroupPercentPoint(percent: percent4, listPoint: listGroup4),
     ];
 
     mapPoints.sort(
-      (a, b) => a.keys.first.compareTo(b.keys.first),
+      (a, b) => a.percent.compareTo(b.percent),
     );
 
     int length = mapPoints.length - 1;
     bool check = false;
+    List<PointCorner> maxPercent = [];
     do {
-      List<PointCorner> maxPercent = mapPoints.elementAt(length).values.first;
+      List<PointCorner> tmp = mapPoints.elementAt(length).listPoint;
+      if (tmp.isNotEmpty) {
+        maxPercent = tmp;
+      }
       DotPoint machinePoint = maxPercent.last.dotPoint;
 
       if (maxPercent.first.notSelected() && maxPercent.last.notSelected()) {
@@ -155,7 +202,6 @@ class _CheckPageState extends State<CheckPage> {
           check = true;
         } else if (length == 0) {
           check = false;
-          mapPoints.first.values.first.first.dotPoint;
           optimalSelectMachine(machinePoint);
         }
       } else {
@@ -175,6 +221,16 @@ class _CheckPageState extends State<CheckPage> {
         optimalSelectMachine(machinePoint);
       }
     } while (check);
+  }
+
+  PointCorner? getPointGroup(List<PointCorner> list, int index) {
+    if (list.isEmpty) return null;
+    if ((list.length - 1) >= index) {
+      return list.elementAt(index);
+    } else if ((index - list.length) == 1) {
+      return list.last;
+    }
+    return null;
   }
 
   optimalSelectMachine(DotPoint machinePoint) {
@@ -317,23 +373,35 @@ class _CheckPageState extends State<CheckPage> {
   }
   //-----------------1--------------------
 
-  List<DotPoint> getEightCorner(DotPoint dotPoint) {
+  List<GroupDotPoint> getEightCorner(DotPoint dotPoint) {
     return [
       //top
       if (dotPoint.x > 0 && dotPoint.y > 0)
-        DotPoint(x: dotPoint.x - 1, y: dotPoint.y - 1),
-      if (dotPoint.y > 0) DotPoint(x: dotPoint.x, y: dotPoint.y - 1),
+        GroupDotPoint(
+            level: 1, dotPoint: DotPoint(x: dotPoint.x - 1, y: dotPoint.y - 1)),
+      if (dotPoint.y > 0)
+        GroupDotPoint(
+            level: 1, dotPoint: DotPoint(x: dotPoint.x, y: dotPoint.y - 1)),
       if (dotPoint.x < count - 2 && dotPoint.y > 0)
-        DotPoint(x: dotPoint.x + 1, y: dotPoint.y - 1),
+        GroupDotPoint(
+            level: 1, dotPoint: DotPoint(x: dotPoint.x + 1, y: dotPoint.y - 1)),
       //between
-      if (dotPoint.x > 0) DotPoint(x: dotPoint.x - 1, y: dotPoint.y),
-      if (dotPoint.x < count - 2) DotPoint(x: dotPoint.x + 1, y: dotPoint.y),
+      if (dotPoint.x > 0)
+        GroupDotPoint(
+            level: 2, dotPoint: DotPoint(x: dotPoint.x - 1, y: dotPoint.y)),
+      if (dotPoint.x < count - 2)
+        GroupDotPoint(
+            level: 2, dotPoint: DotPoint(x: dotPoint.x + 1, y: dotPoint.y)),
       //bottom
       if (dotPoint.x > 0 && dotPoint.y < count - 2)
-        DotPoint(x: dotPoint.x - 1, y: dotPoint.y + 1),
-      if (dotPoint.y < count - 2) DotPoint(x: dotPoint.x, y: dotPoint.y + 1),
+        GroupDotPoint(
+            level: 3, dotPoint: DotPoint(x: dotPoint.x - 1, y: dotPoint.y + 1)),
+      if (dotPoint.y < count - 2)
+        GroupDotPoint(
+            level: 3, dotPoint: DotPoint(x: dotPoint.x, y: dotPoint.y + 1)),
       if (dotPoint.x < count - 2 && dotPoint.y < count - 2)
-        DotPoint(x: dotPoint.x + 1, y: dotPoint.y + 1),
+        GroupDotPoint(
+            level: 3, dotPoint: DotPoint(x: dotPoint.x + 1, y: dotPoint.y + 1)),
     ];
   }
 

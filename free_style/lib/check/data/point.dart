@@ -81,3 +81,21 @@ class DotPoint {
     return "[$x,$y]";
   }
 }
+
+class GroupDotPoint {
+  int level;
+  DotPoint dotPoint;
+  GroupDotPoint({
+    required this.level,
+    required this.dotPoint,
+  });
+}
+
+class GroupPercentPoint {
+  double percent;
+  List<PointCorner> listPoint;
+  GroupPercentPoint({
+    required this.percent,
+    required this.listPoint,
+  });
+}
