@@ -374,35 +374,48 @@ class _CheckPageState extends State<CheckPage> {
   //-----------------1--------------------
 
   List<GroupDotPoint> getEightCorner(DotPoint dotPoint) {
-    return [
-      //top
-      if (dotPoint.x > 0 && dotPoint.y > 0)
-        GroupDotPoint(
-            level: 1, dotPoint: DotPoint(x: dotPoint.x - 1, y: dotPoint.y - 1)),
-      if (dotPoint.y > 0)
-        GroupDotPoint(
-            level: 1, dotPoint: DotPoint(x: dotPoint.x, y: dotPoint.y - 1)),
-      if (dotPoint.x < count - 2 && dotPoint.y > 0)
-        GroupDotPoint(
-            level: 1, dotPoint: DotPoint(x: dotPoint.x + 1, y: dotPoint.y - 1)),
-      //between
-      if (dotPoint.x > 0)
-        GroupDotPoint(
-            level: 2, dotPoint: DotPoint(x: dotPoint.x - 1, y: dotPoint.y)),
-      if (dotPoint.x < count - 2)
-        GroupDotPoint(
-            level: 2, dotPoint: DotPoint(x: dotPoint.x + 1, y: dotPoint.y)),
-      //bottom
-      if (dotPoint.x > 0 && dotPoint.y < count - 2)
-        GroupDotPoint(
-            level: 3, dotPoint: DotPoint(x: dotPoint.x - 1, y: dotPoint.y + 1)),
-      if (dotPoint.y < count - 2)
-        GroupDotPoint(
-            level: 3, dotPoint: DotPoint(x: dotPoint.x, y: dotPoint.y + 1)),
-      if (dotPoint.x < count - 2 && dotPoint.y < count - 2)
-        GroupDotPoint(
-            level: 3, dotPoint: DotPoint(x: dotPoint.x + 1, y: dotPoint.y + 1)),
-    ];
+    int xp = dotPoint.x + 1;
+    int xs = dotPoint.x - 1;
+    int yp = dotPoint.y + 1;
+    int ys = dotPoint.y - 1;
+    List<GroupDotPoint> result = [];
+    //top
+    if (xs >= 0 && ys >= 0) {
+      result.add(GroupDotPoint(
+          level: 1, dotPoint: DotPoint(x: dotPoint.x - 1, y: dotPoint.y - 1)));
+    }
+    if (xs == 0 && ys >= 0) {
+      result.add(GroupDotPoint(
+          level: 1, dotPoint: DotPoint(x: dotPoint.x, y: dotPoint.y - 1)));
+    }
+    if (xs >= -1 && ys >= 0) {
+      result.add(GroupDotPoint(
+          level: 1, dotPoint: DotPoint(x: dotPoint.x + 1, y: dotPoint.y - 1)));
+    }
+
+    //between
+    if (xs >= 0 && ys == 0) {
+      result.add(GroupDotPoint(
+          level: 2, dotPoint: DotPoint(x: dotPoint.x - 1, y: dotPoint.y)));
+    }
+    if (xp >= 0 && yp >= 0) {
+      result.add(GroupDotPoint(
+          level: 2, dotPoint: DotPoint(x: dotPoint.x + 1, y: dotPoint.y)));
+    }
+    //bottom--------------------
+    if (xs >= 0 && ys > 0 && yp > 0) {
+      result.add(GroupDotPoint(
+          level: 3, dotPoint: DotPoint(x: dotPoint.x - 1, y: dotPoint.y + 1)));
+    }
+    if (xp >= 0 && yp > 0) {
+      result.add(GroupDotPoint(
+          level: 3, dotPoint: DotPoint(x: dotPoint.x, y: dotPoint.y + 1)));
+    }
+    if (xp > 0 && yp > 0) {
+      result.add(GroupDotPoint(
+          level: 3, dotPoint: DotPoint(x: dotPoint.x + 1, y: dotPoint.y + 1)));
+    }
+    return result;
   }
 
   @override
