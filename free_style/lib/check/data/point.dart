@@ -84,7 +84,7 @@ class DotPoint {
 
 class GroupDotPoint {
   int level;
-  DotPoint dotPoint;
+  DotPoint? dotPoint;
   GroupDotPoint({
     required this.level,
     required this.dotPoint,
@@ -93,7 +93,7 @@ class GroupDotPoint {
 
 class GroupPercentPoint {
   double percent;
-  List<PointCorner> listPoint;
+  List<PointCorner?> listPoint;
   GroupPercentPoint({
     required this.percent,
     required this.listPoint,

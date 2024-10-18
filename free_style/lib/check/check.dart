@@ -75,87 +75,67 @@ class _CheckPageState extends State<CheckPage> {
         pointCorner.dotPoint.x > count - 2 ||
         pointCorner.dotPoint.y > count - 2) return;
 
+    if (listCorners.every(
+      (element) => !element.notSelected(),
+    )) {
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => PopScope(
+          canPop: false,
+          child: AlertDialog(
+            title: const Text('Caro'),
+            content: const Text('Full'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('comfirm'),
+              ),
+            ],
+          ),
+        ),
+      );
+      return;
+    }
     List<GroupDotPoint> list8 = getEightCorner(pointCorner.dotPoint);
     if (list8.isEmpty) return;
-    List<Map<int, PointCorner>> list8Corner = [];
-    for (var element in listCorners) {
-      for (var el in list8) {
-        if (element.checkMatch(el.dotPoint)) {
-          list8Corner.add({el.level: element});
-          element.percent += 1 / 8;
+    List<Map<int, PointCorner?>> list8Corner = [];
+
+    for (var element in list8) {
+      if (element.dotPoint == null) {
+        list8Corner.add({element.level: null});
+      } else {
+        int index = listCorners.indexWhere(
+          (el) => el.checkMatch(element.dotPoint!),
+        );
+        if (index <= -1) {
+          list8Corner.add({element.level: null});
+        } else {
+          PointCorner pointCorner = listCorners.elementAt(index);
+          list8Corner.add({element.level: pointCorner});
+          pointCorner.percent += 1 / 8;
         }
       }
     }
 
-    List<PointCorner> listGroup1 = [];
-    List<PointCorner> listGroup2 = [];
-    List<PointCorner> listGroup3 = [];
-    List<PointCorner> listGroup4 = [];
-
-    for (var element in list8Corner) {
-      switch (element.keys.first) {
-        case 1:
-          // mapGroup1.addAll({1: element.values.first});
-          //----
-          PointCorner? point1 = getPointGroup(element.values.toList(), 0);
-          PointCorner? point2 = getPointGroup(element.values.toList(), 1);
-          PointCorner? point3 = getPointGroup(element.values.toList(), 2);
-          if (point1 != null) {
-            listGroup1.add(point1);
-          }
-          if (point2 != null) {
-            listGroup2.add(point2);
-          }
-          if (point3 != null) {
-            listGroup3.add(point3);
-          }
-          break;
-        case 2:
-          // mapGroup2.addAll({2: element.values.first});
-          //----
-          PointCorner? point1 = getPointGroup(element.values.toList(), 0);
-          PointCorner? point2 = getPointGroup(element.values.toList(), 1);
-          if (point1 != null) {
-            listGroup4.add(point1);
-          }
-          if (point2 != null) {
-            listGroup4.add(point2);
-          }
-          break;
-        case 3:
-          // mapGroup3.addAll({3: element.values.first});
-          //----
-          PointCorner? point1 = getPointGroup(element.values.toList(), 0);
-          PointCorner? point2 = getPointGroup(element.values.toList(), 1);
-          PointCorner? point3 = getPointGroup(element.values.toList(), 2);
-          if (point1 != null) {
-            listGroup3.add(point1);
-          }
-          if (point2 != null) {
-            listGroup2.add(point2);
-          }
-          if (point3 != null) {
-            listGroup1.add(point3);
-          }
-          break;
-        default:
-          // mapGroup1.addAll({1: element.values.first});
-          //----
-          PointCorner? point1 = getPointGroup(element.values.toList(), 0);
-          PointCorner? point2 = getPointGroup(element.values.toList(), 1);
-          PointCorner? point3 = getPointGroup(element.values.toList(), 2);
-          if (point1 != null) {
-            listGroup1.add(point1);
-          }
-          if (point2 != null) {
-            listGroup2.add(point2);
-          }
-          if (point3 != null) {
-            listGroup3.add(point3);
-          }
-          break;
-      }
-    }
+    List<PointCorner?> listGroup1 = [
+      list8Corner.elementAt(0).values.first,
+      list8Corner.elementAt(7).values.first,
+    ];
+    List<PointCorner?> listGroup2 = [
+      list8Corner.elementAt(1).values.first,
+      list8Corner.elementAt(6).values.first,
+    ];
+    List<PointCorner?> listGroup3 = [
+      list8Corner.elementAt(2).values.first,
+      list8Corner.elementAt(5).values.first,
+    ];
+    List<PointCorner?> listGroup4 = [
+      list8Corner.elementAt(3).values.first,
+      list8Corner.elementAt(4).values.first,
+    ];
 
     double percent1 = 0;
     double percent2 = 0;
@@ -163,16 +143,16 @@ class _CheckPageState extends State<CheckPage> {
     double percent4 = 0;
 
     for (var element in listGroup1) {
-      percent1 += element.percent;
+      percent1 += element == null ? 0 : element.percent;
     }
     for (var element in listGroup2) {
-      percent2 += element.percent;
+      percent2 += element == null ? 0 : element.percent;
     }
     for (var element in listGroup3) {
-      percent3 += element.percent;
+      percent3 += element == null ? 0 : element.percent;
     }
     for (var element in listGroup4) {
-      percent4 += element.percent;
+      percent4 += element == null ? 0 : element.percent;
     }
 
     List<GroupPercentPoint> mapPoints = [
@@ -188,49 +168,136 @@ class _CheckPageState extends State<CheckPage> {
 
     int length = mapPoints.length - 1;
     bool check = false;
-    List<PointCorner> maxPercent = [];
     do {
-      List<PointCorner> tmp = mapPoints.elementAt(length).listPoint;
-      if (tmp.isNotEmpty) {
-        maxPercent = tmp;
+      if (length < 0) {
+        checkOverPoint(list8Corner);
+        break;
       }
-      DotPoint machinePoint = maxPercent.last.dotPoint;
+      List<PointCorner?> maxPercent = mapPoints.elementAt(length).listPoint;
+      DotPoint? machinePoint = maxPercent.last != null
+          ? maxPercent.last!.dotPoint
+          : maxPercent.first?.dotPoint;
 
-      if (maxPercent.first.notSelected() && maxPercent.last.notSelected()) {
-        if (length > 0) {
-          length -= 1;
-          check = true;
-        } else if (length == 0) {
-          check = false;
-          optimalSelectMachine(machinePoint);
+      if (maxPercent.isEmpty || machinePoint == null) {
+        if (length == 0) {
+          checkOverPoint(list8Corner);
+          break;
         }
       } else {
-        check = false;
-        if (!maxPercent.first.notSelected() && !maxPercent.last.notSelected()) {
-          machinePoint = getPoint(
-              maxPercent.first, pointCorner, maxPercent.last, true, true);
-        } else if (!maxPercent.first.notSelected() &&
-            maxPercent.last.notSelected()) {
-          machinePoint = getPoint(
-              maxPercent.first, pointCorner, maxPercent.last, true, false);
-        } else if (maxPercent.first.notSelected() &&
-            !maxPercent.last.notSelected()) {
-          machinePoint = getPoint(
-              maxPercent.first, pointCorner, maxPercent.last, false, true);
+        //-----------
+        if (maxPercent.first == null && maxPercent.last != null) {
+          if (maxPercent.last!.notSelected()) {
+            machinePoint =
+                getPoint(null, pointCorner, maxPercent.last!, true, false);
+            if (pointCorner.checkMatch(machinePoint)) {
+              length -= 1;
+              check = true;
+            } else {
+              check = false;
+              optimalSelectMachine(machinePoint);
+            }
+          } else {
+            length -= 1;
+            check = true;
+          }
         }
-        optimalSelectMachine(machinePoint);
+        //----------
+        if (maxPercent.first != null && maxPercent.last == null) {
+          if (maxPercent.first!.notSelected()) {
+            machinePoint =
+                getPoint(maxPercent.first!, pointCorner, null, false, true);
+            if (pointCorner.checkMatch(machinePoint)) {
+              length -= 1;
+              check = true;
+            } else {
+              check = false;
+              optimalSelectMachine(machinePoint);
+            }
+          } else {
+            length -= 1;
+            check = true;
+          }
+        }
+        //----------
+        if (maxPercent.first != null && maxPercent.last != null) {
+          if (maxPercent.first!.notSelected() &&
+              maxPercent.last!.notSelected()) {
+            if (length > 0) {
+              length -= 1;
+              check = true;
+            } else if (length == 0) {
+              check = false;
+              optimalSelectMachine(machinePoint);
+            }
+          } else {
+            check = false;
+            if (!maxPercent.first!.notSelected() &&
+                !maxPercent.last!.notSelected()) {
+              machinePoint = getPoint(
+                  maxPercent.first!, pointCorner, maxPercent.last!, true, true);
+            } else if (!maxPercent.first!.notSelected() &&
+                maxPercent.last!.notSelected()) {
+              machinePoint = getPoint(maxPercent.first!, pointCorner,
+                  maxPercent.last!, true, false);
+            } else if (maxPercent.first!.notSelected() &&
+                !maxPercent.last!.notSelected()) {
+              machinePoint = getPoint(maxPercent.first!, pointCorner,
+                  maxPercent.last!, false, true);
+            }
+            optimalSelectMachine(machinePoint);
+          }
+        }
       }
     } while (check);
   }
 
-  PointCorner? getPointGroup(List<PointCorner> list, int index) {
-    if (list.isEmpty) return null;
-    if ((list.length - 1) >= index) {
-      return list.elementAt(index);
-    } else if ((index - list.length) == 1) {
-      return list.last;
+  PointCorner? changeCurrentPoint(List<Map<int, PointCorner?>> list8Corner) {
+    list8Corner.retainWhere(
+      (element) => element.values.first != null,
+    );
+    list8Corner.sort(
+      (a, b) => a.values.first!.percent.compareTo(b.values.first!.percent),
+    );
+    int indexPersonal = list8Corner.lastIndexWhere(
+      (element) => element.values.first!.selectPersonal,
+    );
+    int indexMachine = list8Corner.lastIndexWhere(
+      (element) => element.values.first!.selectMachine,
+    );
+    if (indexPersonal > -1) {
+      return list8Corner.elementAt(indexPersonal).values.first!;
+    } else if (indexMachine > -1) {
+      return list8Corner.elementAt(indexMachine).values.first!;
+    } else {
+      return null;
     }
-    return null;
+  }
+
+  checkOverPoint(List<Map<int, PointCorner?>> list8Corner) {
+    PointCorner? pointCorner = changeCurrentPoint(list8Corner);
+    if (pointCorner != null) {
+      processMachine1(pointCorner);
+    } else {
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => PopScope(
+          canPop: false,
+          child: AlertDialog(
+            title: const Text('Caro'),
+            content: const Text('Maximum'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('comfirm'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 
   optimalSelectMachine(DotPoint machinePoint) {
@@ -242,39 +309,25 @@ class _CheckPageState extends State<CheckPage> {
     if (index != -1) {
       PointCorner point = listCorners.elementAt(index);
       point.selectChange(!selectChange);
+      point.percent = 0;
       listCornersMachine.add(point);
       for (var el in listCornersMachine) {
-        el.percent = 0;
+        el.percent -= 1 / 8;
+        if (el.percent < 0) {
+          el.percent = 0;
+        }
       }
     }
   }
 
-  DotPoint getPoint(PointCorner first, PointCorner current, PointCorner last,
+  DotPoint getPoint(PointCorner? first, PointCorner current, PointCorner? last,
       bool checkFirst, bool checkLast) {
     int x = 0;
     int y = 0;
     int xy = 0;
     DotPoint result = current.dotPoint;
-    if (checkFirst && checkLast) {
-      if (first.percent >= last.percent) {
-        x = 0;
-        y = 0;
-        xy = 0;
-        if (current.pointX > first.pointX && current.pointY > first.pointY) {
-          xy = -1;
-        }
-        if (current.pointX == first.pointX && current.pointY > first.pointY) {
-          y = -1;
-        }
-        if (current.pointX < first.pointX && current.pointY > first.pointY) {
-          x = 1;
-          y = -1;
-        }
-        if (current.pointX > first.pointX && current.pointY == first.pointY) {
-          x = -1;
-        }
-        result = dotPoint(x, y, xy, first.dotPoint);
-      } else {
+    if (first == null && last != null) {
+      if (checkLast) {
         x = 0;
         y = 0;
         xy = 0;
@@ -289,55 +342,121 @@ class _CheckPageState extends State<CheckPage> {
           xy = 1;
         }
         if (current.pointX < last.pointX && current.pointY == last.pointY) {
-          y = 1;
-        }
-        result = dotPoint(x, y, xy, first.dotPoint);
-      }
-    }
-    if (checkFirst && !checkLast) {
-      if (first.percent >= last.percent) {
-        x = 0;
-        y = 0;
-        xy = 0;
-        if (current.pointX > first.pointX && current.pointY > first.pointY) {
-          xy = -1;
-        }
-        if (current.pointX == first.pointX && current.pointY > first.pointY) {
-          y = -1;
-        }
-        if (current.pointX < first.pointX && current.pointY > first.pointY) {
           x = 1;
-          y = -1;
         }
-        if (current.pointX > first.pointX && current.pointY == first.pointY) {
-          x = -1;
-        }
-        result = dotPoint(x, y, xy, first.dotPoint);
+        result = dotPoint(x, y, xy, last.dotPoint);
       } else {
         result = last.dotPoint;
       }
     }
-    if (!checkFirst && checkLast) {
-      if (first.percent < last.percent) {
+    if (first != null && last == null) {
+      if (checkFirst) {
         x = 0;
         y = 0;
         xy = 0;
-        if (current.pointX > last.pointX && current.pointY < last.pointY) {
-          x = -1;
-          y = 1;
+        if (current.pointX > first.pointX && current.pointY > first.pointY) {
+          xy = -1;
         }
-        if (current.pointX == last.pointX && current.pointY < last.pointY) {
-          y = 1;
+        if (current.pointX == first.pointX && current.pointY > first.pointY) {
+          y = -1;
         }
-        if (current.pointX < last.pointX && current.pointY < last.pointY) {
-          xy = 1;
-        }
-        if (current.pointX < last.pointX && current.pointY == last.pointY) {
+        if (current.pointX < first.pointX && current.pointY > first.pointY) {
           x = 1;
+          y = -1;
+        }
+        if (current.pointX > first.pointX && current.pointY == first.pointY) {
+          x = -1;
         }
         result = dotPoint(x, y, xy, first.dotPoint);
       } else {
         result = first.dotPoint;
+      }
+    }
+    if (first != null && last != null) {
+      if (checkFirst && checkLast) {
+        if (first.percent >= last.percent) {
+          x = 0;
+          y = 0;
+          xy = 0;
+          if (current.pointX > first.pointX && current.pointY > first.pointY) {
+            xy = -1;
+          }
+          if (current.pointX == first.pointX && current.pointY > first.pointY) {
+            y = -1;
+          }
+          if (current.pointX < first.pointX && current.pointY > first.pointY) {
+            x = 1;
+            y = -1;
+          }
+          if (current.pointX > first.pointX && current.pointY == first.pointY) {
+            x = -1;
+          }
+          result = dotPoint(x, y, xy, first.dotPoint);
+        } else {
+          x = 0;
+          y = 0;
+          xy = 0;
+          if (current.pointX > last.pointX && current.pointY < last.pointY) {
+            x = -1;
+            y = 1;
+          }
+          if (current.pointX == last.pointX && current.pointY < last.pointY) {
+            y = 1;
+          }
+          if (current.pointX < last.pointX && current.pointY < last.pointY) {
+            xy = 1;
+          }
+          if (current.pointX < last.pointX && current.pointY == last.pointY) {
+            y = 1;
+          }
+          result = dotPoint(x, y, xy, first.dotPoint);
+        }
+      }
+      if (checkFirst && !checkLast) {
+        if (first.percent >= last.percent) {
+          x = 0;
+          y = 0;
+          xy = 0;
+          if (current.pointX > first.pointX && current.pointY > first.pointY) {
+            xy = -1;
+          }
+          if (current.pointX == first.pointX && current.pointY > first.pointY) {
+            y = -1;
+          }
+          if (current.pointX < first.pointX && current.pointY > first.pointY) {
+            x = 1;
+            y = -1;
+          }
+          if (current.pointX > first.pointX && current.pointY == first.pointY) {
+            x = -1;
+          }
+          result = dotPoint(x, y, xy, first.dotPoint);
+        } else {
+          result = last.dotPoint;
+        }
+      }
+      if (!checkFirst && checkLast) {
+        if (first.percent < last.percent) {
+          x = 0;
+          y = 0;
+          xy = 0;
+          if (current.pointX > last.pointX && current.pointY < last.pointY) {
+            x = -1;
+            y = 1;
+          }
+          if (current.pointX == last.pointX && current.pointY < last.pointY) {
+            y = 1;
+          }
+          if (current.pointX < last.pointX && current.pointY < last.pointY) {
+            xy = 1;
+          }
+          if (current.pointX < last.pointX && current.pointY == last.pointY) {
+            x = 1;
+          }
+          result = dotPoint(x, y, xy, first.dotPoint);
+        } else {
+          result = first.dotPoint;
+        }
       }
     }
     return result;
@@ -379,41 +498,61 @@ class _CheckPageState extends State<CheckPage> {
     int yp = dotPoint.y + 1;
     int ys = dotPoint.y - 1;
     List<GroupDotPoint> result = [];
+    List<DotPoint?> list1 = [];
+    List<DotPoint?> list2 = [];
+    List<DotPoint?> list3 = [];
     //top
     if (xs >= 0 && ys >= 0) {
-      result.add(GroupDotPoint(
-          level: 1, dotPoint: DotPoint(x: dotPoint.x - 1, y: dotPoint.y - 1)));
+      list1.add(DotPoint(x: dotPoint.x - 1, y: dotPoint.y - 1));
+    } else {
+      list1.add(null);
     }
-    if (xs == 0 && ys >= 0) {
-      result.add(GroupDotPoint(
-          level: 1, dotPoint: DotPoint(x: dotPoint.x, y: dotPoint.y - 1)));
+    if ((xs == 0 || xs == -1) && ys >= 0) {
+      list1.add(DotPoint(x: dotPoint.x, y: dotPoint.y - 1));
+    } else {
+      list1.add(null);
     }
     if (xs >= -1 && ys >= 0) {
-      result.add(GroupDotPoint(
-          level: 1, dotPoint: DotPoint(x: dotPoint.x + 1, y: dotPoint.y - 1)));
+      list1.add(DotPoint(x: dotPoint.x + 1, y: dotPoint.y - 1));
+    } else {
+      list1.add(null);
     }
 
     //between
     if (xs >= 0 && ys == 0) {
-      result.add(GroupDotPoint(
-          level: 2, dotPoint: DotPoint(x: dotPoint.x - 1, y: dotPoint.y)));
+      list2.add(DotPoint(x: dotPoint.x - 1, y: dotPoint.y));
+    } else {
+      list2.add(null);
     }
     if (xp >= 0 && yp >= 0) {
-      result.add(GroupDotPoint(
-          level: 2, dotPoint: DotPoint(x: dotPoint.x + 1, y: dotPoint.y)));
+      list2.add(DotPoint(x: dotPoint.x + 1, y: dotPoint.y));
+    } else {
+      list2.add(null);
     }
     //bottom--------------------
     if (xs >= 0 && ys > 0 && yp > 0) {
-      result.add(GroupDotPoint(
-          level: 3, dotPoint: DotPoint(x: dotPoint.x - 1, y: dotPoint.y + 1)));
+      list3.add(DotPoint(x: dotPoint.x - 1, y: dotPoint.y + 1));
+    } else {
+      list3.add(null);
     }
     if (xp >= 0 && yp > 0) {
-      result.add(GroupDotPoint(
-          level: 3, dotPoint: DotPoint(x: dotPoint.x, y: dotPoint.y + 1)));
+      list3.add(DotPoint(x: dotPoint.x, y: dotPoint.y + 1));
+    } else {
+      list3.add(null);
     }
     if (xp > 0 && yp > 0) {
-      result.add(GroupDotPoint(
-          level: 3, dotPoint: DotPoint(x: dotPoint.x + 1, y: dotPoint.y + 1)));
+      list3.add(DotPoint(x: dotPoint.x + 1, y: dotPoint.y + 1));
+    } else {
+      list3.add(null);
+    }
+    for (var element in list1) {
+      result.add(GroupDotPoint(level: 1, dotPoint: element));
+    }
+    for (var element in list2) {
+      result.add(GroupDotPoint(level: 2, dotPoint: element));
+    }
+    for (var element in list3) {
+      result.add(GroupDotPoint(level: 3, dotPoint: element));
     }
     return result;
   }
