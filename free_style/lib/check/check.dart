@@ -19,6 +19,8 @@ class _CheckPageState extends State<CheckPage> {
   bool selectChange = false;
   List<PointCorner> listCornersPersonal = [];
   List<PointCorner> listCornersMachine = [];
+  bool lockSettings = false;
+  bool showInformation = false;
 
   @override
   void initState() {
@@ -28,7 +30,19 @@ class _CheckPageState extends State<CheckPage> {
   createSize(double width, double height, double marginTop) {
     if (controller.text.isEmpty) return;
     listCorners = [];
-    count = int.parse(controller.text);
+    int? size = int.tryParse(controller.text);
+    if (size == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Enter Number"),
+      ));
+      if (controller.text.trim().contains('lltm')) {
+        lockSettings = true;
+      } else {
+        lockSettings = false;
+      }
+      return;
+    }
+    count = size + 1;
     //corners
     for (int i = 0; i < count - 1; i++) {
       for (int j = 0; j < count - 1; j++) {
@@ -41,16 +55,12 @@ class _CheckPageState extends State<CheckPage> {
             percent: 0));
       }
     }
-    log(listCorners.toString());
     setState(() {});
   }
 
   selectPoint(TapUpDetails details, double marginTop) {
     RenderBox renderBox = context.findRenderObject() as RenderBox;
     Offset offset = renderBox.globalToLocal(details.globalPosition);
-    log("${offset.dx} - ${offset.dy}");
-    log("${radius * 1.5}");
-    log("${listCorners.first.dx + radius - offset.dx} && ${listCorners.first.dy + radius - (offset.dy - marginTop)}");
     int index = listCorners.indexWhere(
       (element) => ((element.dx + radius - offset.dx).abs() <= radius * 1.5 &&
           (element.dy + radius - (offset.dy - marginTop)).abs() <=
@@ -63,17 +73,18 @@ class _CheckPageState extends State<CheckPage> {
         PointCorner currentPoint = listCorners.elementAt(index);
         currentPoint.percent += 1 / 8;
         listCornersPersonal.add(currentPoint);
-        processMachine1(currentPoint);
+        processMachine(currentPoint);
       }
     }
     setState(() {});
   }
 
-  processMachine1(PointCorner pointCorner) {
+  processMachine(PointCorner pointCorner) {
+    int maxRange = count - 2;
     if (pointCorner.dotPoint.x < 0 ||
         pointCorner.dotPoint.y < 0 ||
-        pointCorner.dotPoint.x > count - 2 ||
-        pointCorner.dotPoint.y > count - 2) return;
+        pointCorner.dotPoint.x > maxRange ||
+        pointCorner.dotPoint.y > maxRange) return;
 
     if (listCorners.every(
       (element) => !element.notSelected(),
@@ -99,171 +110,224 @@ class _CheckPageState extends State<CheckPage> {
       );
       return;
     }
-    List<GroupDotPoint> list8 = getEightCorner(pointCorner.dotPoint);
+    List<GroupDotPoint> list8 = getEightCorner(pointCorner.dotPoint, maxRange);
     if (list8.isEmpty) return;
-    List<Map<int, PointCorner?>> list8Corner = [];
+    try {
+      List<Map<int, PointCorner?>> list8Corner = [];
 
-    for (var element in list8) {
-      if (element.dotPoint == null) {
-        list8Corner.add({element.level: null});
-      } else {
-        int index = listCorners.indexWhere(
-          (el) => el.checkMatch(element.dotPoint!),
-        );
-        if (index <= -1) {
+      for (var element in list8) {
+        if (element.dotPoint == null) {
           list8Corner.add({element.level: null});
         } else {
-          PointCorner pointCorner = listCorners.elementAt(index);
-          list8Corner.add({element.level: pointCorner});
-          pointCorner.percent += 1 / 8;
+          int index = listCorners.indexWhere(
+            (el) => el.checkMatch(element.dotPoint!),
+          );
+          if (index <= -1) {
+            list8Corner.add({element.level: null});
+          } else {
+            PointCorner pointCorner = listCorners.elementAt(index);
+            list8Corner.add({element.level: pointCorner});
+            pointCorner.percent += 1 / 8;
+          }
         }
       }
-    }
 
-    List<PointCorner?> listGroup1 = [
-      list8Corner.elementAt(0).values.first,
-      list8Corner.elementAt(7).values.first,
-    ];
-    List<PointCorner?> listGroup2 = [
-      list8Corner.elementAt(1).values.first,
-      list8Corner.elementAt(6).values.first,
-    ];
-    List<PointCorner?> listGroup3 = [
-      list8Corner.elementAt(2).values.first,
-      list8Corner.elementAt(5).values.first,
-    ];
-    List<PointCorner?> listGroup4 = [
-      list8Corner.elementAt(3).values.first,
-      list8Corner.elementAt(4).values.first,
-    ];
+      List<PointCorner?> listGroup1 = [
+        list8Corner.elementAt(0).values.first,
+        list8Corner.elementAt(7).values.first,
+      ];
+      List<PointCorner?> listGroup2 = [
+        list8Corner.elementAt(1).values.first,
+        list8Corner.elementAt(6).values.first,
+      ];
+      List<PointCorner?> listGroup3 = [
+        list8Corner.elementAt(2).values.first,
+        list8Corner.elementAt(5).values.first,
+      ];
+      List<PointCorner?> listGroup4 = [
+        list8Corner.elementAt(3).values.first,
+        list8Corner.elementAt(4).values.first,
+      ];
 
-    double percent1 = 0;
-    double percent2 = 0;
-    double percent3 = 0;
-    double percent4 = 0;
+      double percent1 = 0;
+      double percent2 = 0;
+      double percent3 = 0;
+      double percent4 = 0;
 
-    for (var element in listGroup1) {
-      percent1 += element == null ? 0 : element.percent;
-    }
-    for (var element in listGroup2) {
-      percent2 += element == null ? 0 : element.percent;
-    }
-    for (var element in listGroup3) {
-      percent3 += element == null ? 0 : element.percent;
-    }
-    for (var element in listGroup4) {
-      percent4 += element == null ? 0 : element.percent;
-    }
-
-    List<GroupPercentPoint> mapPoints = [
-      GroupPercentPoint(percent: percent1, listPoint: listGroup1),
-      GroupPercentPoint(percent: percent2, listPoint: listGroup2),
-      GroupPercentPoint(percent: percent3, listPoint: listGroup3),
-      GroupPercentPoint(percent: percent4, listPoint: listGroup4),
-    ];
-
-    mapPoints.sort(
-      (a, b) => a.percent.compareTo(b.percent),
-    );
-
-    int length = mapPoints.length - 1;
-    bool check = false;
-    do {
-      if (length < 0) {
-        checkOverPoint(list8Corner);
-        break;
+      for (var element in listGroup1) {
+        percent1 += element == null ? 0 : element.percent;
       }
-      List<PointCorner?> maxPercent = mapPoints.elementAt(length).listPoint;
-      DotPoint? machinePoint = maxPercent.last != null
-          ? maxPercent.last!.dotPoint
-          : maxPercent.first?.dotPoint;
+      for (var element in listGroup2) {
+        percent2 += element == null ? 0 : element.percent;
+      }
+      for (var element in listGroup3) {
+        percent3 += element == null ? 0 : element.percent;
+      }
+      for (var element in listGroup4) {
+        percent4 += element == null ? 0 : element.percent;
+      }
 
-      if (maxPercent.isEmpty || machinePoint == null) {
-        if (length == 0) {
-          checkOverPoint(list8Corner);
+      List<GroupPercentPoint> mapPoints = [
+        GroupPercentPoint(percent: percent1, listPoint: listGroup1),
+        GroupPercentPoint(percent: percent2, listPoint: listGroup2),
+        GroupPercentPoint(percent: percent3, listPoint: listGroup3),
+        GroupPercentPoint(percent: percent4, listPoint: listGroup4),
+      ];
+
+      mapPoints.sort(
+        (a, b) => a.percent.compareTo(b.percent),
+      );
+
+      int length = mapPoints.length - 1;
+      bool check = false;
+      do {
+        if (length < 0) {
+          checkOverPoint(list8Corner, true);
           break;
         }
-      } else {
-        //-----------
-        if (maxPercent.first == null && maxPercent.last != null) {
-          if (maxPercent.last!.notSelected()) {
-            machinePoint =
-                getPoint(null, pointCorner, maxPercent.last!, true, false);
-            if (pointCorner.checkMatch(machinePoint)) {
-              length -= 1;
-              check = true;
-            } else {
-              check = false;
-              optimalSelectMachine(machinePoint);
-            }
-          } else {
-            length -= 1;
-            check = true;
+        List<PointCorner?> maxPercent = mapPoints.elementAt(length).listPoint;
+        DotPoint? machinePoint = maxPercent.last != null
+            ? maxPercent.last!.dotPoint
+            : maxPercent.first?.dotPoint;
+
+        if (maxPercent.isEmpty || machinePoint == null) {
+          if (length == 0) {
+            checkOverPoint(list8Corner, false);
+            break;
           }
-        }
-        //----------
-        if (maxPercent.first != null && maxPercent.last == null) {
-          if (maxPercent.first!.notSelected()) {
-            machinePoint =
-                getPoint(maxPercent.first!, pointCorner, null, false, true);
-            if (pointCorner.checkMatch(machinePoint)) {
-              length -= 1;
-              check = true;
-            } else {
-              check = false;
-              optimalSelectMachine(machinePoint);
-            }
-          } else {
-            length -= 1;
-            check = true;
-          }
-        }
-        //----------
-        if (maxPercent.first != null && maxPercent.last != null) {
-          if (maxPercent.first!.notSelected() &&
-              maxPercent.last!.notSelected()) {
-            if (length > 0) {
-              length -= 1;
-              check = true;
-            } else if (length == 0) {
-              check = false;
-              optimalSelectMachine(machinePoint);
-            }
-          } else {
-            check = false;
-            if (!maxPercent.first!.notSelected() &&
-                !maxPercent.last!.notSelected()) {
+        } else {
+          //-----------
+          if (maxPercent.first == null && maxPercent.last != null) {
+            if (maxPercent.last!.notSelected()) {
               machinePoint = getPoint(
-                  maxPercent.first!, pointCorner, maxPercent.last!, true, true);
-            } else if (!maxPercent.first!.notSelected() &&
-                maxPercent.last!.notSelected()) {
-              machinePoint = getPoint(maxPercent.first!, pointCorner,
-                  maxPercent.last!, true, false);
-            } else if (maxPercent.first!.notSelected() &&
-                !maxPercent.last!.notSelected()) {
-              machinePoint = getPoint(maxPercent.first!, pointCorner,
-                  maxPercent.last!, false, true);
+                  null, pointCorner, maxPercent.last!, true, false, maxRange);
+              if (pointCorner.checkMatch(machinePoint)) {
+                length -= 1;
+                check = true;
+              } else {
+                check = false;
+                if (machinePoint.x <= maxRange &&
+                    machinePoint.x >= 0 &&
+                    machinePoint.y <= maxRange &&
+                    machinePoint.y >= 0) {
+                  optimalSelectMachine(machinePoint: machinePoint);
+                } else {
+                  checkOverPoint(list8Corner, false);
+                  break;
+                }
+              }
+            } else {
+              length -= 1;
+              check = true;
             }
-            optimalSelectMachine(machinePoint);
+          }
+          //----------
+          if (maxPercent.first != null && maxPercent.last == null) {
+            if (maxPercent.first!.notSelected()) {
+              machinePoint = getPoint(
+                  maxPercent.first!, pointCorner, null, false, true, maxRange);
+              if (pointCorner.checkMatch(machinePoint)) {
+                length -= 1;
+                check = true;
+              } else {
+                check = false;
+                if (machinePoint.x <= maxRange &&
+                    machinePoint.x >= 0 &&
+                    machinePoint.y <= maxRange &&
+                    machinePoint.y >= 0) {
+                  optimalSelectMachine(machinePoint: machinePoint);
+                } else {
+                  checkOverPoint(list8Corner, false);
+                  break;
+                }
+              }
+            } else {
+              length -= 1;
+              check = true;
+            }
+          }
+          //----------
+          if (maxPercent.first != null && maxPercent.last != null) {
+            if (maxPercent.first!.notSelected() &&
+                maxPercent.last!.notSelected()) {
+              if (length > 0) {
+                length -= 1;
+                check = true;
+              } else if (length == 0) {
+                check = false;
+                if (machinePoint.x <= maxRange &&
+                    machinePoint.x >= 0 &&
+                    machinePoint.y <= maxRange &&
+                    machinePoint.y >= 0) {
+                  optimalSelectMachine(machinePoint: machinePoint);
+                } else {
+                  checkOverPoint(list8Corner, false);
+                  break;
+                }
+              }
+            } else {
+              check = false;
+              if (!maxPercent.first!.notSelected() &&
+                  !maxPercent.last!.notSelected()) {
+                machinePoint = getPoint(maxPercent.first!, pointCorner,
+                    maxPercent.last!, true, true, maxRange);
+              } else if (!maxPercent.first!.notSelected() &&
+                  maxPercent.last!.notSelected()) {
+                machinePoint = getPoint(maxPercent.first!, pointCorner,
+                    maxPercent.last!, true, false, maxRange);
+              } else if (maxPercent.first!.notSelected() &&
+                  !maxPercent.last!.notSelected()) {
+                machinePoint = getPoint(maxPercent.first!, pointCorner,
+                    maxPercent.last!, false, true, maxRange);
+              }
+              if (machinePoint.x <= maxRange &&
+                  machinePoint.x >= 0 &&
+                  machinePoint.y <= maxRange &&
+                  machinePoint.y >= 0) {
+                optimalSelectMachine(machinePoint: machinePoint);
+              } else {
+                checkOverPoint(list8Corner, true);
+                break;
+              }
+            }
           }
         }
-      }
-    } while (check);
+      } while (check);
+    } catch (e) {
+      log('$e');
+      int index = listCorners.indexWhere(
+        (element) => element.notSelected(),
+      );
+      optimalSelectMachine(index: index);
+    }
   }
 
-  PointCorner? changeCurrentPoint(List<Map<int, PointCorner?>> list8Corner) {
+  PointCorner? changeCurrentPoint(
+      List<Map<int, PointCorner?>> list8Corner, bool incre) {
     list8Corner.retainWhere(
       (element) => element.values.first != null,
     );
     list8Corner.sort(
       (a, b) => a.values.first!.percent.compareTo(b.values.first!.percent),
     );
-    int indexPersonal = list8Corner.lastIndexWhere(
-      (element) => element.values.first!.selectPersonal,
-    );
-    int indexMachine = list8Corner.lastIndexWhere(
-      (element) => element.values.first!.selectMachine,
-    );
+    int indexPersonal = -1;
+    int indexMachine = -1;
+    if (incre) {
+      indexPersonal = list8Corner.indexWhere(
+        (element) => element.values.first!.selectPersonal,
+      );
+      indexMachine = list8Corner.indexWhere(
+        (element) => element.values.first!.selectMachine,
+      );
+    } else {
+      indexPersonal = list8Corner.lastIndexWhere(
+        (element) => element.values.first!.selectPersonal,
+      );
+      indexMachine = list8Corner.lastIndexWhere(
+        (element) => element.values.first!.selectMachine,
+      );
+    }
+
     if (indexPersonal > -1) {
       return list8Corner.elementAt(indexPersonal).values.first!;
     } else if (indexMachine > -1) {
@@ -273,10 +337,10 @@ class _CheckPageState extends State<CheckPage> {
     }
   }
 
-  checkOverPoint(List<Map<int, PointCorner?>> list8Corner) {
-    PointCorner? pointCorner = changeCurrentPoint(list8Corner);
+  checkOverPoint(List<Map<int, PointCorner?>> list8Corner, bool incre) {
+    PointCorner? pointCorner = changeCurrentPoint(list8Corner, incre);
     if (pointCorner != null) {
-      processMachine1(pointCorner);
+      processMachine(pointCorner);
     } else {
       showDialog(
         context: context,
@@ -300,12 +364,16 @@ class _CheckPageState extends State<CheckPage> {
     }
   }
 
-  optimalSelectMachine(DotPoint machinePoint) {
-    int index = listCorners.indexWhere(
-      (element) =>
-          element.dotPoint.x == machinePoint.x &&
-          element.dotPoint.y == machinePoint.y,
-    );
+  optimalSelectMachine({DotPoint? machinePoint, int? index}) {
+    int index = machinePoint != null
+        ? (listCorners.indexWhere(
+            (element) =>
+                element.dotPoint.x == machinePoint.x &&
+                element.dotPoint.y == machinePoint.y,
+          ))
+        : (listCorners.indexWhere(
+            (element) => element.notSelected(),
+          ));
     if (index != -1) {
       PointCorner point = listCorners.elementAt(index);
       point.selectChange(!selectChange);
@@ -317,11 +385,31 @@ class _CheckPageState extends State<CheckPage> {
           el.percent = 0;
         }
       }
+    } else {
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => PopScope(
+          canPop: false,
+          child: AlertDialog(
+            title: const Text('Caro'),
+            content: const Text('Full'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('comfirm'),
+              ),
+            ],
+          ),
+        ),
+      );
     }
   }
 
   DotPoint getPoint(PointCorner? first, PointCorner current, PointCorner? last,
-      bool checkFirst, bool checkLast) {
+      bool checkFirst, bool checkLast, int maxRange) {
     int x = 0;
     int y = 0;
     int xy = 0;
@@ -374,7 +462,11 @@ class _CheckPageState extends State<CheckPage> {
     }
     if (first != null && last != null) {
       if (checkFirst && checkLast) {
-        if (first.percent >= last.percent) {
+        if (first.percent >= last.percent &&
+            first.pointX < maxRange &&
+            first.pointY < maxRange &&
+            first.pointX > 0 &&
+            first.pointY > 0) {
           x = 0;
           y = 0;
           xy = 0;
@@ -413,7 +505,11 @@ class _CheckPageState extends State<CheckPage> {
         }
       }
       if (checkFirst && !checkLast) {
-        if (first.percent >= last.percent) {
+        if (first.percent >= last.percent &&
+            first.pointX < maxRange &&
+            first.pointY < maxRange &&
+            first.pointX > 0 &&
+            first.pointY > 0) {
           x = 0;
           y = 0;
           xy = 0;
@@ -436,7 +532,11 @@ class _CheckPageState extends State<CheckPage> {
         }
       }
       if (!checkFirst && checkLast) {
-        if (first.percent < last.percent) {
+        if (first.percent < last.percent &&
+            first.pointX < maxRange &&
+            first.pointY < maxRange &&
+            first.pointX > 0 &&
+            first.pointY > 0) {
           x = 0;
           y = 0;
           xy = 0;
@@ -492,7 +592,7 @@ class _CheckPageState extends State<CheckPage> {
   }
   //-----------------1--------------------
 
-  List<GroupDotPoint> getEightCorner(DotPoint dotPoint) {
+  List<GroupDotPoint> getEightCorner(DotPoint dotPoint, int max) {
     int xp = dotPoint.x + 1;
     int xs = dotPoint.x - 1;
     int yp = dotPoint.y + 1;
@@ -503,45 +603,45 @@ class _CheckPageState extends State<CheckPage> {
     List<DotPoint?> list3 = [];
     //top
     if (xs >= 0 && ys >= 0) {
-      list1.add(DotPoint(x: dotPoint.x - 1, y: dotPoint.y - 1));
-    } else {
-      list1.add(null);
-    }
-    if ((xs == 0 || xs == -1) && ys >= 0) {
-      list1.add(DotPoint(x: dotPoint.x, y: dotPoint.y - 1));
+      list1.add(DotPoint(x: xs, y: ys));
     } else {
       list1.add(null);
     }
     if (xs >= -1 && ys >= 0) {
-      list1.add(DotPoint(x: dotPoint.x + 1, y: dotPoint.y - 1));
+      list1.add(DotPoint(x: dotPoint.x, y: ys));
+    } else {
+      list1.add(null);
+    }
+    if (xs >= -1 && ys >= 0 && xp <= max) {
+      list1.add(DotPoint(x: xp, y: ys));
     } else {
       list1.add(null);
     }
 
     //between
-    if (xs >= 0 && ys == 0) {
-      list2.add(DotPoint(x: dotPoint.x - 1, y: dotPoint.y));
+    if (xs >= 0 && ys >= -1) {
+      list2.add(DotPoint(x: xs, y: dotPoint.y));
     } else {
       list2.add(null);
     }
-    if (xp >= 0 && yp >= 0) {
-      list2.add(DotPoint(x: dotPoint.x + 1, y: dotPoint.y));
+    if (xp >= 0 && yp >= 0 && xp <= max) {
+      list2.add(DotPoint(x: xp, y: dotPoint.y));
     } else {
       list2.add(null);
     }
     //bottom--------------------
-    if (xs >= 0 && ys > 0 && yp > 0) {
-      list3.add(DotPoint(x: dotPoint.x - 1, y: dotPoint.y + 1));
+    if (xs >= 0 && ys >= -1 && yp <= max) {
+      list3.add(DotPoint(x: xs, y: yp));
     } else {
       list3.add(null);
     }
-    if (xp >= 0 && yp > 0) {
-      list3.add(DotPoint(x: dotPoint.x, y: dotPoint.y + 1));
+    if (xp >= 0 && yp > 0 && yp <= max) {
+      list3.add(DotPoint(x: dotPoint.x, y: yp));
     } else {
       list3.add(null);
     }
-    if (xp > 0 && yp > 0) {
-      list3.add(DotPoint(x: dotPoint.x + 1, y: dotPoint.y + 1));
+    if (xp > 0 && yp > 0 && xp <= max && yp <= max) {
+      list3.add(DotPoint(x: xp, y: yp));
     } else {
       list3.add(null);
     }
@@ -557,12 +657,27 @@ class _CheckPageState extends State<CheckPage> {
     return result;
   }
 
+  resetAll() {
+    controller.clear();
+    count = 1;
+    radius = 10;
+    large = 2;
+    listCorners = [];
+    selectChange = false;
+    listCornersPersonal = [];
+    listCornersMachine = [];
+    lockSettings = false;
+    showInformation = false;
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     double marginTop = MediaQuery.viewPaddingOf(context).top + 50;
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
     return Scaffold(
+      backgroundColor: Colors.white,
       body: GestureDetector(
         onTapUp: (TapUpDetails details) {
           selectPoint(details, marginTop);
@@ -570,29 +685,89 @@ class _CheckPageState extends State<CheckPage> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              Container(
-                height: 50,
-                width: width / 4,
-                decoration:
-                    BoxDecoration(border: Border.all(color: Colors.black)),
-                margin:
-                    EdgeInsets.only(top: MediaQuery.viewPaddingOf(context).top),
-                alignment: Alignment.center,
-                child: TextField(
-                  controller: controller,
-                  onSubmitted: (value) {
-                    createSize(width, height, marginTop);
-                  },
-                  textAlign: TextAlign.center,
-                  keyboardType: TextInputType.number,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: lockSettings
+                    ? MainAxisAlignment.spaceBetween
+                    : MainAxisAlignment.center,
+                children: [
+                  if (lockSettings)
+                    Container(
+                      margin: const EdgeInsets.only(top: 10),
+                      child: IconButton(
+                          onPressed: () {
+                            setState(() {
+                              showInformation = !showInformation;
+                            });
+                          },
+                          icon: const Icon(Icons.info_rounded)),
+                    ),
+                  Row(
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.close,
+                              color: Colors.blue,
+                            ),
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 5),
+                              child: const Text('Personal'),
+                            )
+                          ],
+                        ),
+                      ),
+                      Container(
+                        height: 50,
+                        width: width / 4,
+                        decoration: BoxDecoration(
+                            border: Border.all(color: Colors.black)),
+                        margin: EdgeInsets.only(
+                            top: MediaQuery.viewPaddingOf(context).top),
+                        alignment: Alignment.center,
+                        child: TextField(
+                          controller: controller,
+                          onSubmitted: (value) {
+                            createSize(width, height, marginTop);
+                          },
+                          textAlign: TextAlign.center,
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.circle_outlined,
+                                color: Colors.red),
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 5),
+                              child: const Text('Machine'),
+                            )
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (lockSettings)
+                    Container(
+                      margin: const EdgeInsets.only(top: 10),
+                      child: IconButton(
+                          onPressed: () {
+                            resetAll();
+                          },
+                          icon: const Icon(Icons.restore)),
+                    ),
+                ],
               ),
               Container(
                 width: width,
                 height: height - marginTop,
                 decoration: BoxDecoration(
                     color: Colors.white,
-                    border: Border.all(color: Colors.redAccent)),
+                    border: Border.all(color: Colors.black)),
                 child: Stack(children: [
                   //row
                   ...List.generate(
@@ -602,7 +777,8 @@ class _CheckPageState extends State<CheckPage> {
                       child: Container(
                         width: large,
                         height: MediaQuery.of(context).size.height,
-                        decoration: const BoxDecoration(color: Colors.black),
+                        decoration:
+                            BoxDecoration(color: Colors.black.withOpacity(.1)),
                       ),
                     ),
                   ),
@@ -614,7 +790,8 @@ class _CheckPageState extends State<CheckPage> {
                       child: Container(
                         width: MediaQuery.of(context).size.width,
                         height: large,
-                        decoration: const BoxDecoration(color: Colors.black),
+                        decoration:
+                            BoxDecoration(color: Colors.black.withOpacity(.1)),
                       ),
                     ),
                   ),
@@ -625,20 +802,24 @@ class _CheckPageState extends State<CheckPage> {
                         left: listCorners.elementAt(index).dx,
                         top: listCorners.elementAt(index).dy,
                         child: Stack(children: [
-                          Container(
-                            margin: const EdgeInsets.only(left: 15, top: 15),
-                            decoration: BoxDecoration(color: Colors.brown[50]),
-                            child: IntrinsicHeight(
-                              child: Column(
-                                children: [
-                                  Text(
-                                      "(${listCorners.elementAt(index).dotPoint.x},${listCorners.elementAt(index).dotPoint.y})\n"),
-                                  Text(
-                                      "${listCorners.elementAt(index).percent}")
-                                ],
-                              ),
-                            ),
-                          ),
+                          showInformation
+                              ? Container(
+                                  margin:
+                                      const EdgeInsets.only(left: 15, top: 15),
+                                  decoration:
+                                      BoxDecoration(color: Colors.brown[50]),
+                                  child: IntrinsicHeight(
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                            "(${listCorners.elementAt(index).dotPoint.x},${listCorners.elementAt(index).dotPoint.y})\n"),
+                                        Text(
+                                            "${listCorners.elementAt(index).percent}")
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
                           CircleAvatar(
                             radius: listCorners
                                         .elementAt(index)
@@ -646,12 +827,24 @@ class _CheckPageState extends State<CheckPage> {
                                     listCorners.elementAt(index).selectPersonal
                                 ? radius
                                 : 0,
-                            backgroundColor: listCorners
-                                    .elementAt(index)
-                                    .selectMachine
-                                ? Colors.red
+                            backgroundColor: Colors.white,
+                            // listCorners
+                            //         .elementAt(index)
+                            //         .selectMachine
+                            //     ? Colors.red
+                            //     : listCorners.elementAt(index).selectPersonal
+                            //         ? Colors.yellow
+                            //         : null,
+                            child: listCorners.elementAt(index).selectMachine
+                                ? const Icon(
+                                    Icons.circle_outlined,
+                                    color: Colors.red,
+                                  )
                                 : listCorners.elementAt(index).selectPersonal
-                                    ? Colors.yellow
+                                    ? const Icon(
+                                        Icons.close,
+                                        color: Colors.blue,
+                                      )
                                     : null,
                           ),
                         ])),
