@@ -99,3 +99,12 @@ class GroupPercentPoint {
     required this.listPoint,
   });
 }
+
+class GroupOffsetPoint {
+  PointCorner option;
+  List<PointCorner> listPoint;
+  GroupOffsetPoint({
+    required this.option,
+    required this.listPoint,
+  });
+}

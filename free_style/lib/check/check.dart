@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:free_style/check/data/point.dart';
@@ -11,6 +12,7 @@ class CheckPage extends StatefulWidget {
 }
 
 class _CheckPageState extends State<CheckPage> {
+  static const int maxWin = 5;
   TextEditingController controller = TextEditingController();
   int count = 1;
   double radius = 10;
@@ -18,7 +20,9 @@ class _CheckPageState extends State<CheckPage> {
   List<PointCorner> listCorners = [];
   bool selectChange = false;
   List<PointCorner> listCornersPersonal = [];
+  List<Offset> listCornersPersonalWin = [];
   List<PointCorner> listCornersMachine = [];
+  List<Offset> listCornersMachineWin = [];
   bool lockSettings = false;
   bool showInformation = false;
 
@@ -42,6 +46,12 @@ class _CheckPageState extends State<CheckPage> {
       }
       return;
     }
+    //----------
+    listCornersPersonal = [];
+    listCornersPersonalWin = [];
+    listCornersMachine = [];
+    listCornersMachineWin = [];
+    //----------
     count = size + 1;
     //corners
     for (int i = 0; i < count - 1; i++) {
@@ -73,6 +83,7 @@ class _CheckPageState extends State<CheckPage> {
         PointCorner currentPoint = listCorners.elementAt(index);
         currentPoint.percent += 1 / 8;
         listCornersPersonal.add(currentPoint);
+        processWinPerson(person: listCornersPersonal, machine: null);
         processMachine(currentPoint);
       }
     }
@@ -385,6 +396,7 @@ class _CheckPageState extends State<CheckPage> {
           el.percent = 0;
         }
       }
+      processWinPerson(person: null, machine: listCornersMachine);
     } else {
       showDialog(
         context: context,
@@ -657,6 +669,179 @@ class _CheckPageState extends State<CheckPage> {
     return result;
   }
 
+  processWinPerson(
+      {required List<PointCorner>? person,
+      required List<PointCorner>? machine}) {
+    bool checkPerson = false;
+    List<PointCorner> list = [];
+    if (person != null) {
+      checkPerson = true;
+      list = person;
+    }
+    if (machine != null) {
+      checkPerson = false;
+      list = machine;
+    }
+    if (list.isEmpty) return;
+
+    list.sort(
+      (a, b) => a.pointY.compareTo(b.pointY),
+    );
+    List<PointCorner> listColumn = list
+        .where(
+          (element) => list.any((el) =>
+              (element.pointX - el.pointX).abs() == 0 &&
+              (element.pointY - el.pointY).abs() == 1),
+        )
+        .toList();
+    list.sort(
+      (a, b) => a.pointX.compareTo(b.pointX),
+    );
+    List<PointCorner> listRow = list
+        .where(
+          (element) => list.any((el) =>
+              (element.pointX - el.pointX).abs() == 1 &&
+              (element.pointY - el.pointY).abs() == 0),
+        )
+        .toList();
+    List<PointCorner> listDiagonal = list
+        .where(
+          (element) => list.any((el) =>
+              (element.pointX - el.pointX).abs() == 1 &&
+              (element.pointY - el.pointY).abs() == 1 &&
+              !element.checkMatch(el.dotPoint)),
+        )
+        .toList();
+    List<GroupOffsetPoint> mapColumn = filterPointWithNumber(listColumn, true);
+    List<GroupOffsetPoint> mapRow = filterPointWithNumber(listRow, false);
+    List<GroupOffsetPoint> mapDiagonal =
+        filterPointWithNumberDiagonal(listDiagonal);
+    if (mapColumn.isNotEmpty) {
+      mapColumn.sort(
+        (a, b) => a.listPoint.length.compareTo(b.listPoint.length),
+      );
+      listColumn = mapColumn.last.listPoint;
+    }
+    if (mapRow.isNotEmpty) {
+      mapRow.sort(
+        (a, b) => a.listPoint.length.compareTo(b.listPoint.length),
+      );
+      listRow = mapRow.last.listPoint;
+    }
+    if (mapDiagonal.isNotEmpty) {
+      mapDiagonal.sort(
+        (a, b) => a.listPoint.length.compareTo(b.listPoint.length),
+      );
+      for (var element in mapDiagonal.reversed) {
+        if (element.listPoint.every(
+          (ele) => element.listPoint.every(
+            (el) =>
+                (ele.pointX != el.pointX && ele.pointY != el.pointY) ||
+                (ele.pointX == el.pointX && ele.pointY == el.pointY),
+          ),
+        )) {
+          listDiagonal = element.listPoint;
+          break;
+        }
+      }
+    }
+    listColumn.sort(
+      (a, b) => a.pointY.compareTo(b.pointY),
+    );
+    listRow.sort(
+      (a, b) => a.pointX.compareTo(b.pointX),
+    );
+    listDiagonal.sort(
+      (a, b) => a.pointX.compareTo(b.pointX),
+    );
+    if (listColumn.length == maxWin) {
+      for (var element in listColumn) {
+        checkPerson
+            ? listCornersPersonalWin
+                .add(Offset(element.dx + radius, element.dy + radius))
+            : listCornersMachineWin
+                .add(Offset(element.dx + radius, element.dy + radius));
+      }
+    } else if (listRow.length == maxWin) {
+      for (var element in listRow) {
+        checkPerson
+            ? listCornersPersonalWin
+                .add(Offset(element.dx + radius, element.dy + radius))
+            : listCornersMachineWin
+                .add(Offset(element.dx + radius, element.dy + radius));
+      }
+    } else if (listDiagonal.length == maxWin) {
+      for (var element in listDiagonal) {
+        checkPerson
+            ? listCornersPersonalWin
+                .add(Offset(element.dx + radius, element.dy + radius))
+            : listCornersMachineWin
+                .add(Offset(element.dx + radius, element.dy + radius));
+      }
+    }
+    if (listCornersPersonalWin.length == 5 ||
+        listCornersMachineWin.length == 5) {
+      log('$listCornersPersonalWin\n$listCornersMachineWin');
+    }
+    setState(() {});
+  }
+
+  List<GroupOffsetPoint> filterPointWithNumber(
+      List<PointCorner> list, bool getX) {
+    List<GroupOffsetPoint> map = [];
+    for (var element in list) {
+      if (getX) {
+        int index = map.indexWhere(
+          (el) => el.option.pointX == element.pointX,
+        );
+        if (index != -1) {
+          map.elementAt(index).listPoint.add(element);
+        } else {
+          map.add(GroupOffsetPoint(option: element, listPoint: [element]));
+        }
+      } else {
+        int index = map.indexWhere(
+          (el) => el.option.pointY == element.pointY,
+        );
+        if (index != -1) {
+          map.elementAt(index).listPoint.add(element);
+        } else {
+          map.add(GroupOffsetPoint(option: element, listPoint: [element]));
+        }
+      }
+    }
+    return map;
+  }
+
+  List<GroupOffsetPoint> filterPointWithNumberDiagonal(List<PointCorner> list) {
+    List<GroupOffsetPoint> map = [];
+    for (var element in list) {
+      if (!map.any(
+        (el) => el.option.checkMatch(element.dotPoint),
+      )) {
+        map.add(GroupOffsetPoint(option: element, listPoint: [element]));
+      }
+    }
+    for (var element in map) {
+      List<PointCorner> listTmp = list
+          .where(
+            (el) =>
+                (el.pointX - element.option.pointX).abs() > 0 &&
+                (el.pointY - element.option.pointY).abs() > 0 &&
+                (el.pointX - element.option.pointX).abs() ==
+                    (el.pointY - element.option.pointY).abs(),
+          )
+          .toList();
+      if (listTmp.isNotEmpty) {
+        element.listPoint.addAll(listTmp);
+        element.listPoint.sort(
+          (a, b) => a.pointX.compareTo(b.pointX),
+        );
+      }
+    }
+    return map;
+  }
+
   resetAll() {
     controller.clear();
     count = 1;
@@ -665,7 +850,9 @@ class _CheckPageState extends State<CheckPage> {
     listCorners = [];
     selectChange = false;
     listCornersPersonal = [];
+    listCornersPersonalWin = [];
     listCornersMachine = [];
+    listCornersMachineWin = [];
     lockSettings = false;
     showInformation = false;
     setState(() {});
@@ -802,7 +989,8 @@ class _CheckPageState extends State<CheckPage> {
                         left: listCorners.elementAt(index).dx,
                         top: listCorners.elementAt(index).dy,
                         child: Stack(children: [
-                          showInformation
+                          //showInformation
+                          true
                               ? Container(
                                   margin:
                                       const EdgeInsets.only(left: 15, top: 15),
@@ -849,6 +1037,12 @@ class _CheckPageState extends State<CheckPage> {
                           ),
                         ])),
                   ),
+                  CustomPaint(
+                    painter: MyPainter(
+                        listOffsetPerson: listCornersPersonalWin,
+                        listOffsetMachine: listCornersMachineWin),
+                    child: Container(),
+                  ),
                 ]),
               ),
             ],
@@ -856,6 +1050,40 @@ class _CheckPageState extends State<CheckPage> {
         ),
       ),
     );
+  }
+}
+
+class MyPainter extends CustomPainter {
+  MyPainter(
+      {super.repaint,
+      required this.listOffsetPerson,
+      required this.listOffsetMachine});
+  final List<Offset> listOffsetPerson;
+  final List<Offset> listOffsetMachine;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const pointMode = PointMode.polygon;
+    // final points = [
+    //   Offset(50, 100),
+    //   Offset(150, 75),
+    //   Offset(250, 250),
+    //   Offset(130, 200),
+    //   Offset(270, 100),
+    // ];
+    bool checkPerson = listOffsetPerson.isNotEmpty;
+    List<Offset> listOffset =
+        listOffsetPerson.isNotEmpty ? listOffsetPerson : listOffsetMachine;
+    final paint = Paint()
+      ..color = checkPerson ? Colors.blue : Colors.red
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+    canvas.drawPoints(pointMode, listOffset, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return false;
   }
 }
 
