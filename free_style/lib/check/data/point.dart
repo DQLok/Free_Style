@@ -108,3 +108,12 @@ class GroupOffsetPoint {
     required this.listPoint,
   });
 }
+
+class PointWithMaxLength {
+  List<PointCorner> listPoint;
+  PointCorner? pointCorner;
+  PointWithMaxLength({
+    required this.listPoint,
+    required this.pointCorner,
+  });
+}
