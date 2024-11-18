@@ -1,7 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:free_style/number/number.dart';
+import 'package:free_style/map/map.dart';
 import 'package:network_discovery/network_discovery.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
@@ -23,8 +23,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const NumberPage(),
-      //const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MapPage(),
     );
   }
 }
