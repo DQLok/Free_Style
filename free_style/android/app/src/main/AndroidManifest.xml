@@ -8,7 +8,7 @@
         <!--key
         google-->
         <meta-data android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyD04xwk4Q70P81Km-wY7BWR9SNXrClkZXw" />
+            android:value="@string/google_maps_key" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
